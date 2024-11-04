@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Test template for InstanceTypeAZCheck, builds two VPCs from one instance one of which has the Retain property
+
+Resources:
+  # Custom resource to get subset of zones that have the instance type available
+  InstanceTypAZCheck:
+    Type: Custom::CheckInstanceTypeAvailability
+    Properties:
+      ServiceToken: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:InstanceTypAZCheck
+      InstanceType: t4g.small
+      Subnets:
+        - us-east-1a
+        - us-east-1b
+        - us-east-1c
+        - us-east-1d
+        - us-east-1e
+        - us-east-1f
+
+Outputs:
+  InstanceTypeZones:
+    Description: The availability zones for the instance
+    Value: !Join [",", !GetAtt InstanceTypAZCheck.AvailableInAZs]
+    Export:
+      Name: !Sub '${AWS::StackName}-AZs'
+
+  InstanceTypeSubnetIds:
+    Description: The availability zones for the instance
+    Value: !Join [",", !GetAtt InstanceTypAZCheck.AvailableInASubnetIds]
+    Export:
+      Name: !Sub '${AWS::StackName}-SubnetIds'
+
+  TestFirstOutput:
+    Description: The availability zones for the instance
+    Value: !Select [0, !GetAtt InstanceTypAZCheck.AvailableInAZs]
+    Export:
+      Name: !Sub '${AWS::StackName}-SubnetId0'
