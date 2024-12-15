@@ -1,5 +1,6 @@
 provider "aws" {
-  profile = "accuweaver-prod-sso"
+  # Set the profile to the workspace name
+  profile = terraform.workspace
   region  = "us-east-1"  # Replace with your desired region
 }
 

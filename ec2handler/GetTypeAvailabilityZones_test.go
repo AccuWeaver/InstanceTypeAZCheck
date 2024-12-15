@@ -2,6 +2,7 @@ package ec2handler
 
 import (
 	"context"
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"testing"
 )
 
@@ -23,14 +24,16 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 		{
 			name: "All zones",
 			args: args{
-				ctx:          context.Background(),
+				ctx: lambdacontext.NewContext(context.Background(), &lambdacontext.LambdaContext{
+					AwsRequestID:       "test-request-id",
+					InvokedFunctionArn: "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+				}),
 				instanceType: "t4g.small",
 				subnets: []string{
-					"us-east-1a",
-					"us-east-1b",
-					"us-east-1c",
-					"us-east-1d",
-					"us-east-1e",
+					"subnet-3879e95e",
+					"subnet-610b963e",
+					"subnet-65456628",
+					"subnet-73128d52",
 				},
 			},
 			wantPhysicalResourceId: "InstanceTypAZCheck-t4g.small",
@@ -41,10 +44,10 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				"us-east-1b",
 			},
 			wantSubnetInfo: []string{
-				"subnet-53301d1e",
-				"subnet-49970916",
-				"subnet-45c55823",
-				"subnet-4440d865",
+				"subnet-3879e95e",
+				"subnet-610b963e",
+				"subnet-65456628",
+				"subnet-73128d52",
 			},
 			wantErr: false,
 		},
@@ -54,7 +57,7 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				ctx:          context.Background(),
 				instanceType: "t4g.small",
 				subnets: []string{
-					"us-east-1a",
+					"subnet-73128d52",
 				},
 			},
 			wantPhysicalResourceId: "InstanceTypAZCheck-t4g.small",
@@ -62,7 +65,7 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				"us-east-1a",
 			},
 			wantSubnetInfo: []string{
-				"subnet-4440d865",
+				"subnet-73128d52",
 			},
 			wantErr: false,
 		},
@@ -72,7 +75,7 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				ctx:          context.Background(),
 				instanceType: "t4g.small",
 				subnets: []string{
-					"us-east-1e",
+					"subnet-0d8f283c",
 				},
 			},
 			wantPhysicalResourceId: "InstanceTypAZCheck-t4g.small",
@@ -88,46 +91,18 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				return
 			}
 			if gotPhysicalResourceId != tt.wantPhysicalResourceId {
-				t.Errorf("GetTypeAvailabilityZones() gotPhysicalResourceId = %v, want %v", gotPhysicalResourceId, tt.wantPhysicalResourceId)
+				t.Errorf("GetTypeAvailabilityZones() gotPhysicalResourceId = %v, wantResourceId %v", gotPhysicalResourceId, tt.wantPhysicalResourceId)
 			}
 
 			// Compare the availability zones slices to see if they are the same length and have the same values
 			if compareSlices(gotAzInfo, tt.wantAzInfo) == false {
-				t.Errorf("GetTypeAvailabilityZones() gotAzInfo = %d, want %d", len(gotAzInfo), len(tt.wantAzInfo))
+				t.Errorf("GetTypeAvailabilityZones() gotAzInfo = %d, wantResourceId %d", len(gotAzInfo), len(tt.wantAzInfo))
 				// TODO: Add a diff so we see what the differences are
 
 			}
 			if compareSlices(gotSubnetInfo, tt.wantSubnetInfo) == false {
-				t.Errorf("GetTypeAvailabilityZones() gotSubnetInfo = %d, want %d", len(gotSubnetInfo), len(tt.wantAzInfo))
+				t.Errorf("GetTypeAvailabilityZones() gotSubnetInfo = %d, wantResourceId %d", len(gotSubnetInfo), len(tt.wantAzInfo))
 			}
 		})
 	}
-}
-
-// compareSlices checks if two slices have the same members
-func compareSlices(slice1, slice2 []string) bool {
-	if len(slice1) != len(slice2) {
-		return false
-	}
-
-	counts := make(map[string]int)
-
-	for _, item := range slice1 {
-		counts[item]++
-	}
-
-	for _, item := range slice2 {
-		counts[item]--
-		if counts[item] < 0 {
-			return false
-		}
-	}
-
-	for _, count := range counts {
-		if count != 0 {
-			return false
-		}
-	}
-
-	return true
 }

@@ -1,6 +1,6 @@
 # InstanceTypAZCheck
 
-This is a CloudFormation Macro that will get information about the whether an instance type is available in the AZs
+This is a CloudFormation Macro that will get information about whether an instance type is available in the AZs
 where the instance could be built. Needed this because the `InstanceType` parameter was failing for some regions for the
 `t4g.small` instance type in `us-east-1` region.
 

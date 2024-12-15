@@ -10,12 +10,12 @@ Resources:
       ServiceToken: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:InstanceTypAZCheck
       InstanceType: t4g.small
       Subnets:
-        - us-east-1a
-        - us-east-1b
-        - us-east-1c
-        - us-east-1d
-        - us-east-1e
-        - us-east-1f
+        - subnet-3879e95e
+        - subnet-610b963e
+        - subnet-c37b31cd
+        - subnet-0d8f283c
+        - subnet-65456628
+        - subnet-73128d52
 
 Outputs:
   InstanceTypeZones:
@@ -26,12 +26,28 @@ Outputs:
 
   InstanceTypeSubnetIds:
     Description: The availability zones for the instance
-    Value: !Join [",", !GetAtt InstanceTypAZCheck.AvailableInASubnetIds]
+    Value: !Join [",", !GetAtt InstanceTypAZCheck.AvailableInSubnetIds]
     Export:
       Name: !Sub '${AWS::StackName}-SubnetIds'
 
-  TestFirstOutput:
+  FirstAvailableZone:
     Description: The availability zones for the instance
-    Value: !Select [0, !GetAtt InstanceTypAZCheck.AvailableInAZs]
+    Value:
+      Fn::Select:
+        - 0
+        -  Fn::GetAtt:
+            - InstanceTypAZCheck
+            - AvailableInAZs
+    Export:
+      Name: !Sub '${AWS::StackName}-Zone0'
+
+  FirstAvailableSubnet:
+    Description: The first available subnet
+    Value:
+      Fn::Select:
+        - 0
+        - Fn::GetAtt:
+            - InstanceTypAZCheck
+            - AvailableInSubnetIds
     Export:
       Name: !Sub '${AWS::StackName}-SubnetId0'
