@@ -2,11 +2,21 @@ package ec2handler
 
 import (
 	"context"
-	"github.com/aws/aws-lambda-go/lambdacontext"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"testing"
+
+	"github.com/aws/aws-lambda-go/lambdacontext"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/golang/mock/gomock"
 )
 
 func TestGetTypeAvailabilityZones(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEC2Client := &MockEC2Client{}
+
 	type args struct {
 		ctx          context.Context
 		instanceType string
@@ -15,12 +25,15 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 	tests := []struct {
 		name                   string
 		args                   args
+		setup                  func()
 		wantPhysicalResourceId string
 		wantAzInfo             []string
 		wantSubnetInfo         []string
+		wantFirstSubnet        string
+		wantFirstAZ            string
+		wantNextIP             string
 		wantErr                bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "All zones",
 			args: args{
@@ -36,6 +49,30 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 					"subnet-73128d52",
 				},
 			},
+			setup: func() {
+				mockEC2Client.mockDescribeSubnets = func(ctx context.Context, params *ec2.DescribeSubnetsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeSubnetsOutput, error) {
+					return &ec2.DescribeSubnetsOutput{
+						Subnets: []types.Subnet{
+							{
+								AvailabilityZone: aws.String("us-east-1a"),
+								SubnetId:         aws.String("subnet-73128d52"),
+							},
+							{
+								AvailabilityZone: aws.String("us-east-1b"),
+								SubnetId:         aws.String("subnet-65456628"),
+							},
+							{
+								AvailabilityZone: aws.String("us-east-1c"),
+								SubnetId:         aws.String("subnet-610b963e"),
+							},
+							{
+								AvailabilityZone: aws.String("us-east-1d"),
+								SubnetId:         aws.String("subnet-3879e95e"),
+							},
+						},
+					}, nil
+				}
+			},
 			wantPhysicalResourceId: "InstanceTypAZCheck-t4g.small",
 			wantAzInfo: []string{
 				"us-east-1d",
@@ -49,7 +86,10 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				"subnet-65456628",
 				"subnet-73128d52",
 			},
-			wantErr: false,
+			wantFirstAZ:     "us-east-1d",
+			wantFirstSubnet: "subnet-3879e95e",
+			wantNextIP:      "192.0.0.5",
+			wantErr:         false,
 		},
 		{
 			name: "Just 1a",
@@ -59,6 +99,18 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				subnets: []string{
 					"subnet-73128d52",
 				},
+			},
+			setup: func() {
+				mockEC2Client.mockDescribeSubnets = func(ctx context.Context, params *ec2.DescribeSubnetsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeSubnetsOutput, error) {
+					return &ec2.DescribeSubnetsOutput{
+						Subnets: []types.Subnet{
+							{
+								AvailabilityZone: aws.String("us-east-1a"),
+								SubnetId:         aws.String("subnet-73128d52"),
+							},
+						},
+					}, nil
+				}
 			},
 			wantPhysicalResourceId: "InstanceTypAZCheck-t4g.small",
 			wantAzInfo: []string{
@@ -78,6 +130,13 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 					"subnet-0d8f283c",
 				},
 			},
+			setup: func() {
+				mockEC2Client.mockDescribeSubnets = func(ctx context.Context, params *ec2.DescribeSubnetsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeSubnetsOutput, error) {
+					return &ec2.DescribeSubnetsOutput{
+						Subnets: []types.Subnet{},
+					}, nil
+				}
+			},
 			wantPhysicalResourceId: "InstanceTypAZCheck-t4g.small",
 			wantAzInfo:             []string{},
 			wantErr:                false,
@@ -85,23 +144,29 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPhysicalResourceId, gotAzInfo, gotSubnetInfo, err := GetTypeAvailabilityZones(tt.args.ctx, tt.args.instanceType, tt.args.subnets)
+			tt.setup()
+			gotPhysicalResourceId, gotAzInfo, gotSubnetInfo, gotFirstSubnet, gotFirstAZ, gotNextIP, err := GetTypeAvailabilityZones(tt.args.ctx, tt.args.instanceType, tt.args.subnets)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTypeAvailabilityZones() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotPhysicalResourceId != tt.wantPhysicalResourceId {
-				t.Errorf("GetTypeAvailabilityZones() gotPhysicalResourceId = %v, wantResourceId %v", gotPhysicalResourceId, tt.wantPhysicalResourceId)
+				t.Errorf("GetTypeAvailabilityZones() gotPhysicalResourceId = %v, want %v", gotPhysicalResourceId, tt.wantPhysicalResourceId)
 			}
-
-			// Compare the availability zones slices to see if they are the same length and have the same values
-			if compareSlices(gotAzInfo, tt.wantAzInfo) == false {
-				t.Errorf("GetTypeAvailabilityZones() gotAzInfo = %d, wantResourceId %d", len(gotAzInfo), len(tt.wantAzInfo))
-				// TODO: Add a diff so we see what the differences are
-
+			if !compareSlices(gotAzInfo, tt.wantAzInfo) {
+				t.Errorf("GetTypeAvailabilityZones() gotAzInfo = %v, want %v", gotAzInfo, tt.wantAzInfo)
 			}
-			if compareSlices(gotSubnetInfo, tt.wantSubnetInfo) == false {
-				t.Errorf("GetTypeAvailabilityZones() gotSubnetInfo = %d, wantResourceId %d", len(gotSubnetInfo), len(tt.wantAzInfo))
+			if !compareSlices(gotSubnetInfo, tt.wantSubnetInfo) {
+				t.Errorf("GetTypeAvailabilityZones() gotSubnetInfo = %v, want %v", gotSubnetInfo, tt.wantSubnetInfo)
+			}
+			if gotFirstSubnet != tt.wantFirstSubnet {
+				t.Errorf("GetTypeAvailabilityZones() gotFirstSubnet = %v, want %v", gotFirstSubnet, tt.wantFirstSubnet)
+			}
+			if gotFirstAZ != tt.wantFirstAZ {
+				t.Errorf("GetTypeAvailabilityZones() gotFirstAZ = %v, want %v", gotFirstAZ, tt.wantFirstAZ)
+			}
+			if gotNextIP != tt.wantNextIP {
+				t.Errorf("GetTypeAvailabilityZones() gotNextIP = %v, want %v", gotNextIP, tt.wantNextIP)
 			}
 		})
 	}
