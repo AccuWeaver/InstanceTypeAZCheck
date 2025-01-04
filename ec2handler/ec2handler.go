@@ -22,7 +22,8 @@ type EC2Client interface {
 // GetTypeAvailabilityZones - Get the availability zones for a given instance type and subnets
 func GetTypeAvailabilityZones(ctx context.Context, instanceType string, subnets []string) (physicalResourceId string, availableZones []string, availableSubnets []string, firstSubnetId string, firstAZ string, nextIP string, err error) {
 	log.Printf("GetTypeAvailabilityZones(%#v, %v, %v)", ctx, instanceType, subnets)
-	physicalResourceId = fmt.Sprintf("InstanceTypAZCheck-%v", instanceType)
+	lc, _ := lambdacontext.FromContext(ctx)
+	physicalResourceId = fmt.Sprintf("InstanceTypAZCheck-%v-%v", instanceType, lc.AwsRequestID)
 	var cfg aws.Config
 	cfg, err = config.LoadDefaultConfig(ctx)
 	if err != nil {
@@ -204,6 +205,7 @@ func InstanceTypAZCheck(ctx context.Context, event cfn.Event) (string, map[strin
 	log.Printf("InstanceTypAZCheck(%#v, %#v)", ctx, event)
 	lc, _ := lambdacontext.FromContext(ctx)
 	log.Printf("AWSRequestID: %#v", lc.AwsRequestID)
+	physicalResourceID := fmt.Sprintf("InstanceTypAZCheck-%v", lc.AwsRequestID)
 
 	instanceType, ok := event.ResourceProperties["InstanceType"].(string)
 	if !ok {
@@ -212,6 +214,7 @@ func InstanceTypAZCheck(ctx context.Context, event cfn.Event) (string, map[strin
 		return "", nil, err
 	}
 	log.Printf("instance-type: %v", instanceType)
+	physicalResourceID = fmt.Sprintf("InstanceTypAZCheck-%v-%v-%v", instanceType, instanceType, lc.AwsRequestID)
 
 	subnetsInterface, ok := event.ResourceProperties["Subnets"].([]interface{})
 	if !ok {
@@ -225,7 +228,13 @@ func InstanceTypAZCheck(ctx context.Context, event cfn.Event) (string, map[strin
 	}
 	log.Printf("subnets: %v", subnets)
 
-	physicalResourceID, typeAvailableInZones, typeAvailableInSubnetIds, firstSubnetId, firstAZ, nextSubnetIP, err := GetTypeAvailabilityZones(ctx, instanceType, subnets)
+	var typeAvailableInZones []string
+	var typeAvailableInSubnetIds []string
+	var firstSubnetId string
+	var firstAZ string
+	var nextSubnetIP string
+	var err error
+	physicalResourceID, typeAvailableInZones, typeAvailableInSubnetIds, firstSubnetId, firstAZ, nextSubnetIP, err = GetTypeAvailabilityZones(ctx, instanceType, subnets)
 	if err != nil {
 		log.Printf("Error getting availability zones: %v", err)
 		return "", nil, err
