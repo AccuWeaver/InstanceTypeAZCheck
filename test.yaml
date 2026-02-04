@@ -41,3 +41,21 @@ Outputs:
     Value: !Select [ 0, !GetAtt InstanceTypAZCheck.AvailableInSubnetIds ]
     Export:
       Name: !Sub '${AWS::StackName}-SubnetId0'
+
+  SubnetId:
+    Description: The subnet ID for the instance
+    Value: !GetAtt InstanceTypAZCheck.SubnetId
+    Export:
+      Name: !Sub '${AWS::StackName}-SubnetId'
+
+  AZ:
+    Description: The availability zones for the instance
+    Value: !GetAtt InstanceTypAZCheck.AZ
+    Export:
+      Name: !Sub '${AWS::StackName}-AZ'
+
+  PrivateIP:
+    Description: The private IP address for the instance
+    Value: !GetAtt InstanceTypAZCheck.PrivateIP
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateIP'
