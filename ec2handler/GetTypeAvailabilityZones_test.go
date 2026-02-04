@@ -30,10 +30,12 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				}),
 				instanceType: "t4g.small",
 				subnets: []string{
-					"subnet-3879e95e",
-					"subnet-610b963e",
-					"subnet-65456628",
-					"subnet-73128d52",
+					"subnet-d17ddce0",
+					"subnet-53301d1e",
+					"subnet-49970916",
+					"subnet-45c55823",
+					"subnet-32396e3c",
+					"subnet-4440d865",
 				},
 			},
 			wantPhysicalResourceId: "InstanceTypAZCheck-t4g.small",
@@ -42,12 +44,14 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				"us-east-1a",
 				"us-east-1c",
 				"us-east-1b",
+				"us-east-1f",
 			},
 			wantSubnetInfo: []string{
-				"subnet-3879e95e",
-				"subnet-610b963e",
-				"subnet-65456628",
-				"subnet-73128d52",
+				"subnet-53301d1e",
+				"subnet-49970916",
+				"subnet-45c55823",
+				"subnet-32396e3c",
+				"subnet-4440d865",
 			},
 			wantErr: false,
 		},
@@ -57,7 +61,7 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				ctx:          context.Background(),
 				instanceType: "t4g.small",
 				subnets: []string{
-					"subnet-73128d52",
+					"subnet-4440d865",
 				},
 			},
 			wantPhysicalResourceId: "InstanceTypAZCheck-t4g.small",
@@ -65,7 +69,7 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 				"us-east-1a",
 			},
 			wantSubnetInfo: []string{
-				"subnet-73128d52",
+				"subnet-4440d865",
 			},
 			wantErr: false,
 		},
@@ -101,7 +105,7 @@ func TestGetTypeAvailabilityZones(t *testing.T) {
 
 			}
 			if compareSlices(gotSubnetInfo, tt.wantSubnetInfo) == false {
-				t.Errorf("GetTypeAvailabilityZones() gotSubnetInfo = %d, wantResourceId %d", len(gotSubnetInfo), len(tt.wantAzInfo))
+				t.Errorf("GetTypeAvailabilityZones() gotSubnetInfo = %d, wantResourceId %d", len(gotSubnetInfo), len(tt.wantSubnetInfo))
 			}
 		})
 	}

@@ -32,22 +32,12 @@ Outputs:
 
   FirstAvailableZone:
     Description: The availability zones for the instance
-    Value:
-      Fn::Select:
-        - 0
-        -  Fn::GetAtt:
-            - InstanceTypAZCheck
-            - AvailableInAZs
+    Value: !Select [ 0, !GetAtt InstanceTypAZCheck.AvailableInAZs ]
     Export:
       Name: !Sub '${AWS::StackName}-Zone0'
 
   FirstAvailableSubnet:
     Description: The first available subnet
-    Value:
-      Fn::Select:
-        - 0
-        - Fn::GetAtt:
-            - InstanceTypAZCheck
-            - AvailableInSubnetIds
+    Value: !Select [ 0, !GetAtt InstanceTypAZCheck.AvailableInSubnetIds ]
     Export:
       Name: !Sub '${AWS::StackName}-SubnetId0'

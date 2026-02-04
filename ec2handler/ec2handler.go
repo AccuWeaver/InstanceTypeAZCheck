@@ -3,9 +3,10 @@ package ec2handler
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/aws/aws-lambda-go/cfn"
 	"github.com/aws/aws-lambda-go/lambdacontext"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -127,6 +128,17 @@ func InstanceTypAZCheck(ctx context.Context, event cfn.Event) (string, map[strin
 	lc, _ := lambdacontext.FromContext(ctx)
 	log.Printf("AWSRequestID: %#v", lc.AwsRequestID)
 
+	// Handle DELETE immediately - no resources to query or clean up
+	if event.RequestType == "Delete" {
+		log.Printf("DELETE event - returning success immediately")
+		physicalResourceID := event.PhysicalResourceID
+		if physicalResourceID == "" {
+			// Fallback if PhysicalResourceID not set
+			physicalResourceID = fmt.Sprintf("InstanceTypAZCheck-deleted")
+		}
+		return physicalResourceID, map[string]interface{}{}, nil
+	}
+
 	instanceType, ok := event.ResourceProperties["InstanceType"].(string)
 	if !ok {
 		err := fmt.Errorf("InstanceType property is missing or invalid")
@@ -158,33 +170,8 @@ func InstanceTypAZCheck(ctx context.Context, event cfn.Event) (string, map[strin
 		"AvailableInSubnetIds": typeAvailableInSubnetIds,
 	}
 
-	switch event.RequestType {
-	case "Create":
-		// No additional action needed for Create
-	case "Delete":
-		err = RemoveResources(event)
-		if err != nil {
-			log.Printf("Error removing resources: %v", err)
-			return "", nil, err
-		}
-	default:
-		err = RemoveResources(event)
-		if err != nil {
-			log.Printf("Error removing resources: %v", err)
-			return "", nil, err
-		}
-	}
-
 	log.Printf("Returning: %v, %#v", physicalResourceID, data)
 	return physicalResourceID, data, nil
-}
-
-// RemoveResources - Only needed if there were actual resources created.
-func RemoveResources(event cfn.Event) error {
-	log.Printf("RemoveResources(%#v)", event)
-	log.Printf("PhysicalResourceId %v", event.PhysicalResourceID)
-	// Implement resource removal logic if needed
-	return nil
 }
 
 // compareSlices checks if two slices have the same members

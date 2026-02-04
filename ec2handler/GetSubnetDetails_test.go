@@ -31,21 +31,25 @@ func TestGetSubnetDetails(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name: "",
+			name: "Subnet details",
 			args: args{
 				subnets: []string{
-					"subnet-3879e95e",
-					"subnet-610b963e",
-					"subnet-65456628",
-					"subnet-73128d52",
+					"subnet-d17ddce0",
+					"subnet-53301d1e",
+					"subnet-49970916",
+					"subnet-45c55823",
+					"subnet-32396e3c",
+					"subnet-4440d865",
 				},
 				svc: svc,
 			},
 			wantReturnAZ: map[string]string{
-				"us-east-1a": "subnet-73128d52",
-				"us-east-1b": "subnet-65456628",
-				"us-east-1c": "subnet-610b963e",
-				"us-east-1d": "subnet-3879e95e",
+				"us-east-1a": "subnet-4440d865",
+				"us-east-1b": "subnet-53301d1e",
+				"us-east-1c": "subnet-49970916",
+				"us-east-1d": "subnet-45c55823",
+				"us-east-1e": "subnet-d17ddce0",
+				"us-east-1f": "subnet-32396e3c",
 			},
 			wantErr: false,
 		},

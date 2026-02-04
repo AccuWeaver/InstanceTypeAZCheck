@@ -122,6 +122,12 @@ resource "aws_lambda_function" "InstanceTypAZCheck" {
   ]
 }
 
+# Set the cloudwatch retention policy to 7 days
+resource "aws_cloudwatch_log_group" "InstanceTypAZCheck_log_group" {
+  name              = "/aws/lambda/${aws_lambda_function.InstanceTypAZCheck.function_name}"
+  retention_in_days = 7
+}
+
 output "build_message" {
   value = data.external.build_output.result
 }
