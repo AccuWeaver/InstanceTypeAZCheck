@@ -165,6 +165,7 @@ func InstanceTypAZCheck(ctx context.Context, event cfn.Event) (string, map[strin
 		return "", nil, err
 	}
 
+	// Build response data - only return arrays of available zones/subnets
 	data := map[string]interface{}{
 		"AvailableInAZs":       typeAvailableInZones,
 		"AvailableInSubnetIds": typeAvailableInSubnetIds,
