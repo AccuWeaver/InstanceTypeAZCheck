@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 
+	"net"
+
 	"github.com/aws/aws-lambda-go/cfn"
 	"github.com/aws/aws-lambda-go/lambdacontext"
-	"net"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"

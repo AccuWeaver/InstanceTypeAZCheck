@@ -2,12 +2,13 @@ package ec2handler
 
 import (
 	"context"
+	"reflect"
+	"testing"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/golang/mock/gomock"
-	"reflect"
-	"testing"
 )
 
 // MockEC2Client is a mock implementation of the EC2Client interface.
